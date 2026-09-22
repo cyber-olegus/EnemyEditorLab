@@ -6,25 +6,152 @@
         Height="720"
         MinWidth="1000"
         MinHeight="620"
+        Background="#F1F5F9"
         WindowStartupLocation="CenterScreen">
-    <Grid Margin="20">
-        <Border Padding="32"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Background="#F8FAFC"
-                BorderBrush="#CBD5E1"
-                BorderThickness="1"
-                CornerRadius="12">
-            <StackPanel>
-                <TextBlock HorizontalAlignment="Center"
-                           FontSize="28"
-                           FontWeight="SemiBold"
-                           Text="Редактор противников" />
-                <TextBlock Margin="0,10,0,0"
-                           HorizontalAlignment="Center"
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Height" Value="38" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Padding" Value="12,5" />
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="30" />
+            <Setter Property="Margin" Value="0,4,0,10" />
+            <Setter Property="Padding" Value="7,3" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Foreground" Value="#475569" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="14" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <DockPanel Grid.Row="0">
+            <StackPanel DockPanel.Dock="Left">
+                <TextBlock FontSize="26" FontWeight="SemiBold" Text="Редактор противников" />
+                <TextBlock Margin="0,4,0,0"
                            Foreground="#64748B"
-                           Text="Каркас приложения готов." />
+                           Text="Шаблоны для будущей игры-кликера" />
             </StackPanel>
+        </DockPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="14" />
+                <ColumnDefinition Width="360" />
+                <ColumnDefinition Width="14" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Padding="14" Background="White" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="0,0,0,10"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Text="Список противников" />
+                    <ListBox x:Name="EnemiesListBox"
+                             Grid.Row="1"
+                             DisplayMemberPath="Name"
+                             SelectionChanged="EnemiesListBox_SelectionChanged" />
+                    <StackPanel Grid.Row="2" Margin="0,8,0,0">
+                        <Button Content="Удалить выбранного" Click="DeleteEnemy_Click" />
+                        <TextBlock x:Name="EnemyCountText"
+                                   Margin="4,6"
+                                   Foreground="#64748B"
+                                   Text="Противников: 0" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Padding="16" Background="White" CornerRadius="10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Margin="0,0,0,12"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="Параметры шаблона" />
+                        <Label Content="Имя противника" />
+                        <TextBox x:Name="EnemyNameTextBox" Text="Гоблин" />
+                        <Label Content="Имя файла иконки" />
+                        <TextBox x:Name="IconNameTextBox" Text="goblin_1.png" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <Label Content="Базовое здоровье" />
+                                <TextBox x:Name="BaseLifeTextBox" Text="100" />
+                                <Label Content="Модификатор здоровья" />
+                                <TextBox x:Name="LifeModifierTextBox" Text="1,15" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <Label Content="Базовое золото" />
+                                <TextBox x:Name="BaseGoldTextBox" Text="10" />
+                                <Label Content="Модификатор золота" />
+                                <TextBox x:Name="GoldModifierTextBox" Text="1,05" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Label Content="Шанс появления (от 0 до 1)" />
+                        <TextBox x:Name="SpawnChanceTextBox" Text="0,5" />
+
+                        <UniformGrid Columns="2">
+                            <Button Content="Добавить" Click="AddEnemy_Click" />
+                            <Button Content="Обновить" Click="UpdateEnemy_Click" />
+                        </UniformGrid>
+                        <Button Content="Новый шаблон" Click="NewEnemy_Click" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Border Grid.Column="4"
+                    Padding="22"
+                    Background="#E2E8F0"
+                    BorderBrush="#CBD5E1"
+                    BorderThickness="1"
+                    CornerRadius="10">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <TextBlock HorizontalAlignment="Center"
+                               FontSize="42"
+                               Text="🖼" />
+                    <TextBlock Margin="0,12,0,0"
+                               HorizontalAlignment="Center"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Text="Галерея иконок" />
+                    <TextBlock Margin="0,8,0,0"
+                               MaxWidth="300"
+                               HorizontalAlignment="Center"
+                               Foreground="#64748B"
+                               Text="Будет добавлена в отдельной feature-ветке."
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="3" Margin="0,14,0,0" Padding="10" Background="#DBEAFE" CornerRadius="8">
+            <TextBlock x:Name="StatusText"
+                       Foreground="#1E3A8A"
+                       Text="Добавьте первый шаблон противника."
+                       TextWrapping="Wrap" />
         </Border>
     </Grid>
 </Window>
