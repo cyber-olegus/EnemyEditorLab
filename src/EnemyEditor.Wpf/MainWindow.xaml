@@ -87,7 +87,9 @@
                         <Label Content="Имя противника" />
                         <TextBox x:Name="EnemyNameTextBox" Text="Гоблин" />
                         <Label Content="Имя файла иконки" />
-                        <TextBox x:Name="IconNameTextBox" Text="goblin_1.png" />
+                        <TextBox x:Name="IconNameTextBox"
+                                 IsReadOnly="True"
+                                 ToolTip="Выберите изображение в галерее справа" />
 
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -121,29 +123,87 @@
                 </ScrollViewer>
             </Border>
 
-            <Border Grid.Column="4"
-                    Padding="22"
-                    Background="#E2E8F0"
-                    BorderBrush="#CBD5E1"
-                    BorderThickness="1"
-                    CornerRadius="10">
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <TextBlock HorizontalAlignment="Center"
-                               FontSize="42"
-                               Text="🖼" />
-                    <TextBlock Margin="0,12,0,0"
-                               HorizontalAlignment="Center"
-                               FontSize="18"
-                               FontWeight="SemiBold"
-                               Text="Галерея иконок" />
-                    <TextBlock Margin="0,8,0,0"
-                               MaxWidth="300"
-                               HorizontalAlignment="Center"
-                               Foreground="#64748B"
-                               Text="Будет добавлена в отдельной feature-ветке."
-                               TextAlignment="Center"
-                               TextWrapping="Wrap" />
-                </StackPanel>
+            <Border Grid.Column="4" Padding="14" Background="White" CornerRadius="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock VerticalAlignment="Center"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="Галерея иконок" />
+                            <Button DockPanel.Dock="Right"
+                                    MinWidth="126"
+                                    Content="Выбрать папку"
+                                    Click="BrowseIcons_Click" />
+                        </DockPanel>
+                        <TextBox x:Name="IconsFolderTextBox"
+                                 Margin="0,6,0,8"
+                                 IsReadOnly="True"
+                                 ToolTip="Текущая папка с PNG-файлами" />
+                    </StackPanel>
+
+                    <Border Grid.Row="1"
+                            Margin="0,0,0,10"
+                            Padding="8"
+                            Background="#F8FAFC"
+                            BorderBrush="#E2E8F0"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <DockPanel>
+                            <Image x:Name="MainEnemyIcon"
+                                   Width="88"
+                                   Height="88"
+                                   Margin="0,0,12,0"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                   Stretch="Uniform" />
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock FontWeight="SemiBold" Text="Главная иконка" />
+                                <TextBlock x:Name="SelectedIconText"
+                                           Margin="0,5,0,0"
+                                           Foreground="#64748B"
+                                           Text="Не выбрана"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <ListBox x:Name="IconsListBox"
+                             Grid.Row="2"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             SelectionChanged="IconsListBox_SelectionChanged">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="98" Height="112" Margin="4" Padding="6">
+                                    <StackPanel>
+                                        <Image Width="72"
+                                               Height="72"
+                                               RenderOptions.BitmapScalingMode="NearestNeighbor"
+                                               Source="{Binding ImagePath}"
+                                               Stretch="Uniform" />
+                                        <TextBlock Margin="0,5,0,0"
+                                                   HorizontalAlignment="Center"
+                                                   FontSize="11"
+                                                   Text="{Binding Name}"
+                                                   TextAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
             </Border>
         </Grid>
 
@@ -155,4 +215,3 @@
         </Border>
     </Grid>
 </Window>
-
