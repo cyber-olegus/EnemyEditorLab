@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -57,6 +58,73 @@ public partial class MainWindow : Window
 
         SelectIcon(icon);
         StatusText.Text = $"Выбрана иконка «{icon.Name}».";
+    }
+
+    private void SaveEnemyList_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Сохранение списка противников",
+            FileName = "enemy-templates.json",
+            DefaultExt = ".json",
+            AddExtension = true,
+            Filter = "JSON-файлы (*.json)|*.json|Все файлы (*.*)|*.*",
+            OverwritePrompt = true
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _enemyTemplates.SaveToJson(dialog.FileName);
+            StatusText.Text = $"Сохранено противников: {_enemyTemplates.Count}.";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            ShowFileError(exception.Message);
+        }
+    }
+
+    private void LoadEnemyList_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Загрузка списка противников",
+            DefaultExt = ".json",
+            Filter = "JSON-файлы (*.json)|*.json|Все файлы (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _enemyTemplates.LoadFromJson(dialog.FileName);
+            RefreshEnemyList();
+            ClearForm();
+
+            if (_enemyTemplates.Count > 0)
+            {
+                EnemiesListBox.SelectedIndex = 0;
+            }
+
+            StatusText.Text = $"Загружено противников: {_enemyTemplates.Count}.";
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            or UnauthorizedAccessException
+            or JsonException
+            or ArgumentException)
+        {
+            ShowFileError(exception.Message);
+        }
     }
 
     private void AddEnemy_Click(object sender, RoutedEventArgs e)
@@ -322,6 +390,12 @@ public partial class MainWindow : Window
     {
         StatusText.Text = message;
         MessageBox.Show(this, message, "Проверьте данные", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private void ShowFileError(string message)
+    {
+        StatusText.Text = message;
+        MessageBox.Show(this, message, "Ошибка работы с файлом", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     private static void FocusInvalidField(TextBox textBox)

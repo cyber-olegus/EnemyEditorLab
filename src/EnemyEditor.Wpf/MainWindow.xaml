@@ -35,6 +35,10 @@
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button MinWidth="110" Content="Сохранить JSON" Click="SaveEnemyList_Click" />
+                <Button MinWidth="110" Content="Загрузить JSON" Click="LoadEnemyList_Click" />
+            </StackPanel>
             <StackPanel DockPanel.Dock="Left">
                 <TextBlock FontSize="26" FontWeight="SemiBold" Text="Редактор противников" />
                 <TextBlock Margin="0,4,0,0"
