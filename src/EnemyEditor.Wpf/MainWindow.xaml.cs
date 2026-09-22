@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -291,7 +292,7 @@ public partial class MainWindow : Window
         var bitmap = new BitmapImage();
         bitmap.BeginInit();
         bitmap.CacheOption = BitmapCacheOption.OnLoad;
-        bitmap.UriSource = new Uri(Path.GetFullPath(path), UriKind.Absolute);
+        bitmap.UriSource = new System.Uri(Path.GetFullPath(path));
         bitmap.EndInit();
         bitmap.Freeze();
         return bitmap;
