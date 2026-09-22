@@ -1,3 +1,6 @@
+using System.Text.Encodings.Web;
+using System.Text.Json;
+
 namespace EnemyEditor.Core;
 
 /// <summary>
@@ -63,6 +66,74 @@ public sealed class CEnemyTemplateList
         return _enemies.Select(enemy => enemy.Name).ToList();
     }
 
+    public void SaveToJson(string path)
+    {
+        string fullPath = ValidateJsonPath(path);
+        string? directory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var options = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+
+        string json = JsonSerializer.Serialize(_enemies, options);
+        File.WriteAllText(fullPath, json);
+    }
+
+    public void LoadFromJson(string path)
+    {
+        string fullPath = ValidateJsonPath(path);
+        string json = File.ReadAllText(fullPath);
+
+        var documentOptions = new JsonDocumentOptions
+        {
+            AllowTrailingCommas = true,
+            CommentHandling = JsonCommentHandling.Skip
+        };
+
+        using JsonDocument document = JsonDocument.Parse(json, documentOptions);
+        if (document.RootElement.ValueKind != JsonValueKind.Array)
+        {
+            throw new JsonException("Корневой элемент JSON должен быть массивом противников.");
+        }
+
+        var loadedList = new CEnemyTemplateList();
+        int position = 0;
+        foreach (JsonElement element in document.RootElement.EnumerateArray())
+        {
+            position++;
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                throw new JsonException($"Элемент №{position} должен быть объектом.");
+            }
+
+            try
+            {
+                loadedList.AddEnemy(
+                    ReadString(element, nameof(CEnemyTemplate.Name)),
+                    ReadString(element, nameof(CEnemyTemplate.IconName)),
+                    ReadInt32(element, nameof(CEnemyTemplate.BaseLife)),
+                    ReadDouble(element, nameof(CEnemyTemplate.LifeModifier)),
+                    ReadInt32(element, nameof(CEnemyTemplate.BaseGold)),
+                    ReadDouble(element, nameof(CEnemyTemplate.GoldModifier)),
+                    ReadDouble(element, nameof(CEnemyTemplate.SpawnChance)));
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+            {
+                throw new JsonException($"Ошибка в элементе №{position}: {exception.Message}", exception);
+            }
+        }
+
+        // Заменяем текущий список только после успешной проверки всего файла.
+        _enemies.Clear();
+        _enemies.AddRange(loadedList._enemies);
+    }
+
     public void ReplaceEnemyByIndex(
         int id,
         string name,
@@ -102,5 +173,48 @@ public sealed class CEnemyTemplateList
         {
             throw new InvalidOperationException($"Противник с именем «{normalizedName}» уже существует.");
         }
+    }
+
+    private static string ValidateJsonPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Путь к JSON-файлу не должен быть пустым.", nameof(path));
+        }
+
+        return Path.GetFullPath(path);
+    }
+
+    private static string ReadString(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out JsonElement value)
+            || value.ValueKind != JsonValueKind.String)
+        {
+            throw new JsonException($"Свойство {propertyName} должно быть строкой.");
+        }
+
+        return value.GetString()!;
+    }
+
+    private static int ReadInt32(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out JsonElement value)
+            || !value.TryGetInt32(out int result))
+        {
+            throw new JsonException($"Свойство {propertyName} должно быть целым числом.");
+        }
+
+        return result;
+    }
+
+    private static double ReadDouble(JsonElement element, string propertyName)
+    {
+        if (!element.TryGetProperty(propertyName, out JsonElement value)
+            || !value.TryGetDouble(out double result))
+        {
+            throw new JsonException($"Свойство {propertyName} должно быть числом.");
+        }
+
+        return result;
     }
 }
