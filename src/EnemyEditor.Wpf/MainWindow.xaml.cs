@@ -71,6 +71,7 @@ public partial class MainWindow : Window
         var dialog = new SaveFileDialog
         {
             Title = "Сохранение списка противников",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             FileName = "enemy-templates.json",
             DefaultExt = ".json",
             AddExtension = true,
@@ -99,6 +100,7 @@ public partial class MainWindow : Window
         var dialog = new OpenFileDialog
         {
             Title = "Загрузка списка противников",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
             DefaultExt = ".json",
             Filter = "JSON-файлы (*.json)|*.json|Все файлы (*.*)|*.*",
             CheckFileExists = true,
