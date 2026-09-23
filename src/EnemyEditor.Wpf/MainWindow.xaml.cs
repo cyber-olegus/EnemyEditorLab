@@ -17,8 +17,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SearchEnemyTextBox.TextChanged += SearchEnemyTextBox_TextChanged;
         RefreshEnemyList();
         Loaded += MainWindow_Loaded;
+    }
+
+    private void SearchEnemyTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        RefreshEnemyList();
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -107,6 +113,7 @@ public partial class MainWindow : Window
         try
         {
             _enemyTemplates.LoadFromJson(dialog.FileName);
+            SearchEnemyTextBox.Clear();
             RefreshEnemyList();
             ClearForm();
 
@@ -144,6 +151,7 @@ public partial class MainWindow : Window
                 data.BaseGold,
                 data.GoldModifier,
                 data.SpawnChance);
+            SearchEnemyTextBox.Clear();
             RefreshEnemyList(data.Name);
             StatusText.Text = $"Противник «{data.Name}» добавлен.";
         }
@@ -155,10 +163,16 @@ public partial class MainWindow : Window
 
     private void UpdateEnemy_Click(object sender, RoutedEventArgs e)
     {
-        int selectedIndex = EnemiesListBox.SelectedIndex;
-        if (selectedIndex < 0)
+        if (EnemiesListBox.SelectedItem is not CEnemyTemplate selectedEnemy)
         {
             ShowValidationError("Сначала выберите противника в списке.");
+            return;
+        }
+
+        int selectedIndex = _enemyTemplates.GetEnemyIndexByName(selectedEnemy.Name);
+        if (selectedIndex < 0)
+        {
+            ShowValidationError("Выбранный противник больше не существует.");
             return;
         }
 
@@ -178,6 +192,7 @@ public partial class MainWindow : Window
                 data.BaseGold,
                 data.GoldModifier,
                 data.SpawnChance);
+            SearchEnemyTextBox.Clear();
             RefreshEnemyList(data.Name);
             StatusText.Text = $"Противник «{data.Name}» обновлён.";
         }
@@ -189,14 +204,12 @@ public partial class MainWindow : Window
 
     private void DeleteEnemy_Click(object sender, RoutedEventArgs e)
     {
-        int selectedIndex = EnemiesListBox.SelectedIndex;
-        if (selectedIndex < 0)
+        if (EnemiesListBox.SelectedItem is not CEnemyTemplate enemy)
         {
             ShowValidationError("Сначала выберите противника для удаления.");
             return;
         }
 
-        CEnemyTemplate enemy = _enemyTemplates.GetEnemyByIndex(selectedIndex);
         MessageBoxResult result = MessageBox.Show(
             this,
             $"Удалить противника «{enemy.Name}»?",
@@ -209,7 +222,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _enemyTemplates.DeleteEnemyByIndex(selectedIndex);
+        _enemyTemplates.DeleteEnemyByName(enemy.Name);
         RefreshEnemyList();
         ClearForm();
         StatusText.Text = $"Противник «{enemy.Name}» удалён.";
@@ -225,13 +238,11 @@ public partial class MainWindow : Window
 
     private void EnemiesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        int selectedIndex = EnemiesListBox.SelectedIndex;
-        if (selectedIndex < 0 || selectedIndex >= _enemyTemplates.Count)
+        if (EnemiesListBox.SelectedItem is not CEnemyTemplate enemy)
         {
             return;
         }
 
-        CEnemyTemplate enemy = _enemyTemplates.GetEnemyByIndex(selectedIndex);
         EnemyNameTextBox.Text = enemy.Name;
         IconNameTextBox.Text = enemy.IconName;
         BaseLifeTextBox.Text = enemy.BaseLife.ToString(CultureInfo.CurrentCulture);
@@ -297,14 +308,37 @@ public partial class MainWindow : Window
 
     private void RefreshEnemyList(string? selectedName = null)
     {
+        string searchText = SearchEnemyTextBox.Text.Trim();
+        List<CEnemyTemplate> visibleEnemies = _enemyTemplates.Enemies
+            .Where(enemy => searchText.Length == 0
+                || enemy.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
         EnemiesListBox.ItemsSource = null;
-        EnemiesListBox.ItemsSource = _enemyTemplates.Enemies;
-        EnemyCountText.Text = $"Противников: {_enemyTemplates.Count}";
+        EnemiesListBox.ItemsSource = visibleEnemies;
+        EnemyCountText.Text = searchText.Length == 0
+            ? $"Противников: {_enemyTemplates.Count}"
+            : $"Показано: {visibleEnemies.Count} из {_enemyTemplates.Count}";
+        UpdateEnemyStatistics();
 
         if (selectedName is not null)
         {
-            EnemiesListBox.SelectedItem = _enemyTemplates.GetEnemyByName(selectedName);
+            EnemiesListBox.SelectedItem = visibleEnemies.FirstOrDefault(enemy =>
+                string.Equals(enemy.Name, selectedName, StringComparison.OrdinalIgnoreCase));
         }
+    }
+
+    private void UpdateEnemyStatistics()
+    {
+        if (_enemyTemplates.Count == 0)
+        {
+            EnemyStatisticsText.Text = "Среднее здоровье: —";
+            return;
+        }
+
+        double averageLife = _enemyTemplates.Enemies.Average(enemy => enemy.BaseLife);
+        double averageGold = _enemyTemplates.Enemies.Average(enemy => enemy.BaseGold);
+        EnemyStatisticsText.Text = $"Среднее: здоровье {averageLife:0.#}, золото {averageGold:0.#}";
     }
 
     private void LoadIconFolder(string path)

@@ -50,6 +50,12 @@ public sealed class CEnemyTemplateList
         return _enemies[id];
     }
 
+    public int GetEnemyIndexByName(string name)
+    {
+        return _enemies.FindIndex(enemy =>
+            string.Equals(enemy.Name, name, StringComparison.OrdinalIgnoreCase));
+    }
+
     public bool DeleteEnemyByName(string name)
     {
         CEnemyTemplate? enemy = GetEnemyByName(name);
