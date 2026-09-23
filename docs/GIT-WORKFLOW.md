@@ -1,130 +1,284 @@
-# Работа двух участников через GitHub
+# Лабораторная № 1: работа двух участников через GitHub
 
-## 1. Восстановление репозитория из bundle
+Ниже описан безопасный сценарий для **нового пустого репозитория**. Обозначения можно поменять местами, но один участник должен отвечать за иконки, второй — за JSON, поиск и статистику.
 
-Положите `EnemyEditorLab.bundle` в отдельную папку и выполните:
+## Кто что делает
+
+| Участник | Рабочая ветка | Что находится в части | Личный финальный коммит |
+| --- | --- | --- | --- |
+| Участник № 1 (вы) | `feature/enemy-icons` | загрузка PNG, каталог, галерея, выбор главной иконки | увеличить миниатюры в галерее |
+| Участник № 2 (сокомандник) | `feature/json-persistence` | сохранение и ручная загрузка JSON, поиск, статистика | открывать диалоги JSON из «Документов» |
+
+Ветки уже содержат подготовленный командный код с нейтральным автором `Enemy Editor Team`. Личные финальные изменения выполняются каждым участником самостоятельно: так GitHub честно покажет вклад обоих. Пустые коммиты и изменение автора чужих коммитов не нужны.
+
+## Часть A. Действия участника № 1
+
+### Шаг 1. Распакуйте переданный набор
+
+Сохраните `EnemyEditorLab-teamwork.bundle`, например, в `C:\Projects`. Откройте PowerShell в этой папке.
+
+### Шаг 2. Восстановите репозиторий
 
 ```powershell
-git clone .\EnemyEditorLab.bundle EnemyEditorLab
+cd C:\Projects
+git clone .\EnemyEditorLab-teamwork.bundle EnemyEditorLab
 cd EnemyEditorLab
 git branch feature/enemy-icons origin/feature/enemy-icons
 git branch feature/json-persistence origin/feature/json-persistence
 git switch main
 ```
 
-Проверьте ветки и историю:
+Если Git сообщает, что ветка уже существует, это не ошибка: пропустите соответствующую команду `git branch`.
+
+### Шаг 3. Проверьте ветки
 
 ```powershell
-git branch
+git branch -a
 git log --graph --oneline --decorate --all
+git status
 ```
 
-## 2. Настройка авторов
+Рабочая папка должна быть чистой. В истории должны присутствовать `main`, `feature/enemy-icons` и `feature/json-persistence`.
 
-Каждый участник на своём компьютере указывает личные данные GitHub:
+### Шаг 4. Настройте своё имя
+
+Укажите именно имя и почту своего аккаунта GitHub:
 
 ```powershell
-git config user.name "Имя Фамилия"
-git config user.email "email-с-GitHub@example.com"
+git config user.name "Ваше Имя"
+git config user.email "ваша-почта@example.com"
+git config --get user.name
+git config --get user.email
 ```
 
-Подготовительные коммиты имеют нейтрального автора `Enemy Editor Team`. Чтобы в истории были личные изменения, каждый участник должен проверить свою часть и сделать хотя бы одно настоящее улучшение программы под собственным именем.
+### Шаг 5. Создайте репозиторий на GitHub
 
-Примеры небольших осмысленных изменений:
+На GitHub нажмите **New repository** и задайте имя `EnemyEditorLab`.
 
-- участник № 1 может изменить размер миниатюр или текст состояния после выбора иконки;
-- участник № 2 может изменить предлагаемое имя JSON-файла или добавить ещё один пример противника.
+- выберите Public или Private по требованиям преподавателя;
+- **не** добавляйте README;
+- **не** добавляйте `.gitignore`;
+- **не** выбирайте лицензию.
 
-Не создавайте пустые или фиктивные коммиты.
+После создания откройте **Settings → Collaborators → Add people**, добавьте аккаунт сокомандника и попросите его принять приглашение.
 
-## 3. Создание GitHub-репозитория
+### Шаг 6. Подключите GitHub и отправьте подготовленные ветки
 
-Один участник создаёт пустой репозиторий `EnemyEditorLab` без автоматического README и добавляет второго участника через **Settings → Collaborators**.
-
-Замените временный адрес bundle на URL GitHub:
+Замените `YOUR_LOGIN` своим логином:
 
 ```powershell
-git remote set-url origin https://github.com/USERNAME/EnemyEditorLab.git
+git remote set-url origin https://github.com/YOUR_LOGIN/EnemyEditorLab.git
+git remote -v
 git push -u origin main
 git push -u origin feature/enemy-icons
 git push -u origin feature/json-persistence
 ```
 
-## 4. Изменение участника № 1
+Если используется SSH, вместо HTTPS можно указать `git@github.com:YOUR_LOGIN/EnemyEditorLab.git`.
 
-Первый участник переключается на свою ветку:
+### Шаг 7. Сделайте своё изменение в части иконок
 
 ```powershell
 git switch feature/enemy-icons
+git pull --ff-only origin feature/enemy-icons
 ```
 
-Он запускает программу, проверяет выбор папки и иконок, затем вносит небольшое реальное улучшение. После проверки:
+Откройте `src/EnemyEditor.Wpf/MainWindow.xaml`. В шаблоне элемента `IconsListBox` измените:
+
+- размер `Border`: `Width="98" Height="112"` → `Width="106" Height="120"`;
+- размер вложенного `Image`: `Width="72" Height="72"` → `Width="80" Height="80"`.
+
+Это настоящее визуальное улучшение, а не фиктивный коммит. Запустите программу и проверьте, что иконки не обрезаются.
+
+### Шаг 8. Создайте свой коммит
 
 ```powershell
-git add путь-к-изменённому-файлу
-git commit -m "style(icons): improve icon gallery"
-git push
+git diff
+git add src/EnemyEditor.Wpf/MainWindow.xaml
+git commit -m "style(icons): enlarge gallery thumbnails"
+git push origin feature/enemy-icons
+git status
 ```
 
-На GitHub создаётся Pull Request:
+В выводе `git log -1` должно быть ваше имя:
+
+```powershell
+git log -1 --format="%h | %an | %ae | %s"
+```
+
+### Шаг 9. Создайте первый Pull Request
+
+На GitHub откройте **Pull requests → New pull request**:
 
 - `base`: `main`;
 - `compare`: `feature/enemy-icons`;
-- заголовок: `Добавлена галерея иконок противников`.
+- заголовок: `Добавлена галерея иконок противников`;
+- в описании: что реализовано и как проверялось.
 
-Второй участник просматривает **Files changed**, запускает программу и оставляет review. Затем PR сливается вариантом **Create a merge commit**.
+Не сливайте PR сами. Отправьте ссылку сокоманднику.
 
-## 5. Изменение участника № 2
+## Часть B. Действия участника № 2
 
-После слияния первого PR второй участник выполняет:
+### Шаг 10. Сокомандник клонирует GitHub-репозиторий
+
+После принятия приглашения сокомандник выполняет на своём компьютере:
+
+```powershell
+cd C:\Projects
+git clone https://github.com/YOUR_LOGIN/EnemyEditorLab.git EnemyEditorLab
+cd EnemyEditorLab
+git config user.name "Имя Сокомандника"
+git config user.email "почта-сокомандника@example.com"
+git fetch origin
+git branch -a
+```
+
+### Шаг 11. Сокомандник проверяет первый Pull Request
+
+Он открывает PR на GitHub, просматривает вкладку **Files changed**, скачивает ветку и запускает её:
+
+```powershell
+git switch --track origin/feature/enemy-icons
+dotnet build EnemyEditorLab.sln
+dotnet run --project src/EnemyEditor.Wpf
+```
+
+На GitHub сокомандник выбирает **Review changes → Approve**. После этого участник № 1 нажимает **Merge pull request → Create a merge commit**. Ветку пока можно не удалять.
+
+### Шаг 12. Сокомандник подготавливает свою ветку
 
 ```powershell
 git fetch origin
-git switch feature/json-persistence
+git switch --track origin/feature/json-persistence
+git merge origin/main
 ```
 
-Он проверяет сохранение и загрузку `examples/enemies.example.json`, вносит своё небольшое улучшение и фиксирует его:
+Если локальная ветка уже создана, используйте `git switch feature/json-persistence` вместо команды с `--track`.
+
+Если открылся редактор сообщения merge-коммита, оставьте стандартный текст, сохраните файл и закройте редактор. Затем:
 
 ```powershell
-git add путь-к-изменённому-файлу
-git commit -m "feat(json): improve enemy file workflow"
-git push
+git push origin feature/json-persistence
 ```
 
-На GitHub создаётся второй Pull Request:
+### Шаг 13. Сокомандник делает своё изменение
+
+Откройте `src/EnemyEditor.Wpf/MainWindow.xaml.cs`. В объектах `SaveFileDialog` и `OpenFileDialog`, сразу после строки `Title = ...`, добавьте одинаковую настройку:
+
+```csharp
+InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+```
+
+В результате оба диалога сохранения и загрузки будут изначально открывать папку «Документы». Сокомандник должен проверить:
+
+1. создание двух или трёх противников;
+2. фильтрацию по части имени;
+3. изменение статистики;
+4. сохранение в JSON;
+5. очистку/перезапуск программы и загрузку сохранённого файла;
+6. загрузку `examples/enemies.example.json`.
+
+### Шаг 14. Сокомандник создаёт свой коммит
+
+```powershell
+git diff
+git add src/EnemyEditor.Wpf/MainWindow.xaml.cs
+git commit -m "feat(json): open file dialogs in Documents"
+git push origin feature/json-persistence
+git log -1 --format="%h | %an | %ae | %s"
+```
+
+В последней строке должны отображаться имя и почта сокомандника.
+
+### Шаг 15. Создайте второй Pull Request
+
+Сокомандник создаёт PR:
 
 - `base`: `main`;
 - `compare`: `feature/json-persistence`;
-- заголовок: `Добавлено сохранение и загрузка JSON`.
+- заголовок: `Добавлены JSON, поиск и статистика противников`.
 
-Так как ветка JSON построена поверх ветки иконок, после первого merge GitHub покажет во втором PR только новые JSON-изменения. Первый участник проверяет PR, после чего он сливается через **Create a merge commit**.
+Участник № 1 просматривает код, запускает программу и оставляет **Approve**. После проверки сокомандник или владелец репозитория выполняет **Create a merge commit**.
 
-## 6. Получение полной версии
+## Часть C. Финальная проверка обоими участниками
 
-После двух Pull Request оба участника обновляют `main`:
+### Шаг 16. Обновите итоговую ветку
+
+На обоих компьютерах:
 
 ```powershell
 git switch main
-git pull origin main
+git pull --ff-only origin main
+dotnet restore
 dotnet build EnemyEditorLab.sln
+dotnet run --project src/EnemyEditor.Wpf
 ```
+
+### Шаг 17. Проверьте результат
 
 Итоговый `main` должен уметь:
 
 1. выбирать папку с PNG;
-2. показывать иконки одинакового размера;
+2. показывать галерею и главную иконку;
 3. создавать, изменять и удалять противников;
-4. сохранять список в JSON;
-5. загружать список из JSON;
-6. показывать понятные ошибки для неверных данных.
+4. искать противников по имени;
+5. показывать среднее здоровье и золото;
+6. сохранять список в JSON;
+7. вручную разбирать и загружать JSON;
+8. показывать понятные сообщения при неверных данных.
 
-## 7. Что показать преподавателю
+Проверьте историю:
+
+```powershell
+git log --graph --oneline --decorate --all
+git shortlog -sne --all
+```
+
+## Что показать преподавателю
 
 - работающий редактор;
-- три исходные ветки и итоговый `main`;
-- два Pull Request, созданные разными участниками;
-- review каждого участника;
-- личные коммиты обоих участников;
+- ветки `main`, `feature/enemy-icons`, `feature/json-persistence`;
+- два Pull Request от разных участников;
+- два взаимных review;
+- личный коммит каждого участника;
 - JSON-файл со списком противников;
-- граф истории `git log --graph --oneline --decorate --all`.
+- граф `git log --graph --oneline --decorate --all`;
+- таблицу разделения ответственности из этого документа.
 
+## Частые ошибки
+
+### `failed to push some refs`
+
+Сначала проверьте адрес:
+
+```powershell
+git remote -v
+```
+
+Он должен указывать на GitHub, а не на локальный `.bundle`. Если указан bundle:
+
+```powershell
+git remote set-url origin https://github.com/YOUR_LOGIN/EnemyEditorLab.git
+```
+
+### `src refspec ... does not match any`
+
+Ветка не создана локально. Выполните `git branch -a`, затем создайте её из удалённой:
+
+```powershell
+git switch --track origin/feature/json-persistence
+```
+
+### Git просит выбрать автора
+
+Настройте имя и почту командами из шагов 4 или 10, затем повторите `git commit`.
+
+### Возник конфликт при `git merge origin/main`
+
+Не удаляйте маркеры наугад. Выполните `git status`, сохраните сообщение и скриншот конфликта и разберите его вместе. После исправления каждого файла:
+
+```powershell
+git add путь-к-исправленному-файлу
+git commit
+git push
+```
