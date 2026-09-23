@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace EnemyEditor.Core;
 
 /// <summary>
@@ -5,18 +7,25 @@ namespace EnemyEditor.Core;
 /// </summary>
 public sealed class CEnemyTemplate
 {
+    [JsonInclude]
     public string Name { get; private set; }
 
+    [JsonInclude]
     public string IconName { get; private set; }
 
+    [JsonInclude]
     public int BaseLife { get; private set; }
 
+    [JsonInclude]
     public double LifeModifier { get; private set; }
 
+    [JsonInclude]
     public int BaseGold { get; private set; }
 
+    [JsonInclude]
     public double GoldModifier { get; private set; }
 
+    [JsonInclude]
     public double SpawnChance { get; private set; }
 
     public CEnemyTemplate(
@@ -77,4 +86,3 @@ public sealed class CEnemyTemplate
         return Name;
     }
 }
-

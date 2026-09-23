@@ -35,6 +35,10 @@
         </Grid.RowDefinitions>
 
         <DockPanel Grid.Row="0">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                <Button MinWidth="110" Content="Сохранить JSON" Click="SaveEnemyList_Click" />
+                <Button MinWidth="110" Content="Загрузить JSON" Click="LoadEnemyList_Click" />
+            </StackPanel>
             <StackPanel DockPanel.Dock="Left">
                 <TextBlock FontSize="26" FontWeight="SemiBold" Text="Редактор противников" />
                 <TextBlock Margin="0,4,0,0"
@@ -56,6 +60,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
@@ -63,16 +68,27 @@
                                FontSize="18"
                                FontWeight="SemiBold"
                                Text="Список противников" />
+                    <StackPanel Grid.Row="1" Margin="0,0,0,8">
+                        <TextBlock Foreground="#64748B" Text="Поиск по имени" />
+                        <TextBox x:Name="SearchEnemyTextBox"
+                                 Margin="0,4,0,0"
+                                 ToolTip="Введите часть имени противника" />
+                    </StackPanel>
                     <ListBox x:Name="EnemiesListBox"
-                             Grid.Row="1"
+                             Grid.Row="2"
                              DisplayMemberPath="Name"
                              SelectionChanged="EnemiesListBox_SelectionChanged" />
-                    <StackPanel Grid.Row="2" Margin="0,8,0,0">
+                    <StackPanel Grid.Row="3" Margin="0,8,0,0">
                         <Button Content="Удалить выбранного" Click="DeleteEnemy_Click" />
                         <TextBlock x:Name="EnemyCountText"
                                    Margin="4,6"
                                    Foreground="#64748B"
                                    Text="Противников: 0" />
+                        <TextBlock x:Name="EnemyStatisticsText"
+                                   Margin="4,0,4,6"
+                                   Foreground="#64748B"
+                                   Text="Среднее здоровье: —"
+                                   TextWrapping="Wrap" />
                     </StackPanel>
                 </Grid>
             </Border>

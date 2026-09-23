@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
@@ -16,8 +17,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        SearchEnemyTextBox.TextChanged += SearchEnemyTextBox_TextChanged;
         RefreshEnemyList();
         Loaded += MainWindow_Loaded;
+    }
+
+    private void SearchEnemyTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        RefreshEnemyList();
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -59,6 +66,76 @@ public partial class MainWindow : Window
         StatusText.Text = $"Выбрана иконка «{icon.Name}».";
     }
 
+    private void SaveEnemyList_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new SaveFileDialog
+        {
+            Title = "Сохранение списка противников",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            FileName = "enemy-templates.json",
+            DefaultExt = ".json",
+            AddExtension = true,
+            Filter = "JSON-файлы (*.json)|*.json|Все файлы (*.*)|*.*",
+            OverwritePrompt = true
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _enemyTemplates.SaveToJson(dialog.FileName);
+            StatusText.Text = $"Сохранено противников: {_enemyTemplates.Count}.";
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            ShowFileError(exception.Message);
+        }
+    }
+
+    private void LoadEnemyList_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "Загрузка списка противников",
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            DefaultExt = ".json",
+            Filter = "JSON-файлы (*.json)|*.json|Все файлы (*.*)|*.*",
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _enemyTemplates.LoadFromJson(dialog.FileName);
+            SearchEnemyTextBox.Clear();
+            RefreshEnemyList();
+            ClearForm();
+
+            if (_enemyTemplates.Count > 0)
+            {
+                EnemiesListBox.SelectedIndex = 0;
+            }
+
+            StatusText.Text = $"Загружено противников: {_enemyTemplates.Count}.";
+        }
+        catch (Exception exception) when (
+            exception is IOException
+            or UnauthorizedAccessException
+            or JsonException
+            or ArgumentException)
+        {
+            ShowFileError(exception.Message);
+        }
+    }
+
     private void AddEnemy_Click(object sender, RoutedEventArgs e)
     {
         if (!TryReadForm(out EnemyFormData data))
@@ -76,6 +153,7 @@ public partial class MainWindow : Window
                 data.BaseGold,
                 data.GoldModifier,
                 data.SpawnChance);
+            SearchEnemyTextBox.Clear();
             RefreshEnemyList(data.Name);
             StatusText.Text = $"Противник «{data.Name}» добавлен.";
         }
@@ -87,10 +165,16 @@ public partial class MainWindow : Window
 
     private void UpdateEnemy_Click(object sender, RoutedEventArgs e)
     {
-        int selectedIndex = EnemiesListBox.SelectedIndex;
-        if (selectedIndex < 0)
+        if (EnemiesListBox.SelectedItem is not CEnemyTemplate selectedEnemy)
         {
             ShowValidationError("Сначала выберите противника в списке.");
+            return;
+        }
+
+        int selectedIndex = _enemyTemplates.GetEnemyIndexByName(selectedEnemy.Name);
+        if (selectedIndex < 0)
+        {
+            ShowValidationError("Выбранный противник больше не существует.");
             return;
         }
 
@@ -110,6 +194,7 @@ public partial class MainWindow : Window
                 data.BaseGold,
                 data.GoldModifier,
                 data.SpawnChance);
+            SearchEnemyTextBox.Clear();
             RefreshEnemyList(data.Name);
             StatusText.Text = $"Противник «{data.Name}» обновлён.";
         }
@@ -121,14 +206,12 @@ public partial class MainWindow : Window
 
     private void DeleteEnemy_Click(object sender, RoutedEventArgs e)
     {
-        int selectedIndex = EnemiesListBox.SelectedIndex;
-        if (selectedIndex < 0)
+        if (EnemiesListBox.SelectedItem is not CEnemyTemplate enemy)
         {
             ShowValidationError("Сначала выберите противника для удаления.");
             return;
         }
 
-        CEnemyTemplate enemy = _enemyTemplates.GetEnemyByIndex(selectedIndex);
         MessageBoxResult result = MessageBox.Show(
             this,
             $"Удалить противника «{enemy.Name}»?",
@@ -141,7 +224,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _enemyTemplates.DeleteEnemyByIndex(selectedIndex);
+        _enemyTemplates.DeleteEnemyByName(enemy.Name);
         RefreshEnemyList();
         ClearForm();
         StatusText.Text = $"Противник «{enemy.Name}» удалён.";
@@ -157,13 +240,11 @@ public partial class MainWindow : Window
 
     private void EnemiesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        int selectedIndex = EnemiesListBox.SelectedIndex;
-        if (selectedIndex < 0 || selectedIndex >= _enemyTemplates.Count)
+        if (EnemiesListBox.SelectedItem is not CEnemyTemplate enemy)
         {
             return;
         }
 
-        CEnemyTemplate enemy = _enemyTemplates.GetEnemyByIndex(selectedIndex);
         EnemyNameTextBox.Text = enemy.Name;
         IconNameTextBox.Text = enemy.IconName;
         BaseLifeTextBox.Text = enemy.BaseLife.ToString(CultureInfo.CurrentCulture);
@@ -229,14 +310,37 @@ public partial class MainWindow : Window
 
     private void RefreshEnemyList(string? selectedName = null)
     {
+        string searchText = SearchEnemyTextBox.Text.Trim();
+        List<CEnemyTemplate> visibleEnemies = _enemyTemplates.Enemies
+            .Where(enemy => searchText.Length == 0
+                || enemy.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
         EnemiesListBox.ItemsSource = null;
-        EnemiesListBox.ItemsSource = _enemyTemplates.Enemies;
-        EnemyCountText.Text = $"Противников: {_enemyTemplates.Count}";
+        EnemiesListBox.ItemsSource = visibleEnemies;
+        EnemyCountText.Text = searchText.Length == 0
+            ? $"Противников: {_enemyTemplates.Count}"
+            : $"Показано: {visibleEnemies.Count} из {_enemyTemplates.Count}";
+        UpdateEnemyStatistics();
 
         if (selectedName is not null)
         {
-            EnemiesListBox.SelectedItem = _enemyTemplates.GetEnemyByName(selectedName);
+            EnemiesListBox.SelectedItem = visibleEnemies.FirstOrDefault(enemy =>
+                string.Equals(enemy.Name, selectedName, StringComparison.OrdinalIgnoreCase));
         }
+    }
+
+    private void UpdateEnemyStatistics()
+    {
+        if (_enemyTemplates.Count == 0)
+        {
+            EnemyStatisticsText.Text = "Среднее здоровье: —";
+            return;
+        }
+
+        double averageLife = _enemyTemplates.Enemies.Average(enemy => enemy.BaseLife);
+        double averageGold = _enemyTemplates.Enemies.Average(enemy => enemy.BaseGold);
+        EnemyStatisticsText.Text = $"Среднее: здоровье {averageLife:0.#}, золото {averageGold:0.#}";
     }
 
     private void LoadIconFolder(string path)
@@ -322,6 +426,12 @@ public partial class MainWindow : Window
     {
         StatusText.Text = message;
         MessageBox.Show(this, message, "Проверьте данные", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
+
+    private void ShowFileError(string message)
+    {
+        StatusText.Text = message;
+        MessageBox.Show(this, message, "Ошибка работы с файлом", MessageBoxButton.OK, MessageBoxImage.Error);
     }
 
     private static void FocusInvalidField(TextBox textBox)
