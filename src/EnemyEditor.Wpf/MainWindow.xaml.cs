@@ -1,18 +1,62 @@
 using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media.Imaging;
 using EnemyEditor.Core;
+using Microsoft.Win32;
 
 namespace EnemyEditor.Wpf;
 
 public partial class MainWindow : Window
 {
     private readonly CEnemyTemplateList _enemyTemplates = new();
+    private readonly EnemyIconCatalog _iconCatalog = new();
 
     public MainWindow()
     {
         InitializeComponent();
         RefreshEnemyList();
+        Loaded += MainWindow_Loaded;
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        string sampleIconsFolder = Path.Combine(AppContext.BaseDirectory, "Assets", "Icons", "Monsters");
+        if (Directory.Exists(sampleIconsFolder))
+        {
+            LoadIconFolder(sampleIconsFolder);
+        }
+    }
+
+    private void BrowseIcons_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Выберите папку с PNG-иконками",
+            Multiselect = false
+        };
+
+        if (Directory.Exists(IconsFolderTextBox.Text))
+        {
+            dialog.InitialDirectory = IconsFolderTextBox.Text;
+        }
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            LoadIconFolder(dialog.FolderName);
+        }
+    }
+
+    private void IconsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (IconsListBox.SelectedItem is not EnemyIcon icon)
+        {
+            return;
+        }
+
+        SelectIcon(icon);
+        StatusText.Text = $"Выбрана иконка «{icon.Name}».";
     }
 
     private void AddEnemy_Click(object sender, RoutedEventArgs e)
@@ -127,6 +171,7 @@ public partial class MainWindow : Window
         BaseGoldTextBox.Text = enemy.BaseGold.ToString(CultureInfo.CurrentCulture);
         GoldModifierTextBox.Text = enemy.GoldModifier.ToString(CultureInfo.CurrentCulture);
         SpawnChanceTextBox.Text = enemy.SpawnChance.ToString(CultureInfo.CurrentCulture);
+        SelectIconByName(enemy.IconName);
         StatusText.Text = $"Выбран противник «{enemy.Name}».";
     }
 
@@ -194,6 +239,65 @@ public partial class MainWindow : Window
         }
     }
 
+    private void LoadIconFolder(string path)
+    {
+        try
+        {
+            _iconCatalog.LoadIconsFromFolder(path);
+            IconsFolderTextBox.Text = Path.GetFullPath(path);
+            IconsListBox.ItemsSource = null;
+            IconsListBox.ItemsSource = _iconCatalog.Icons;
+
+            if (_iconCatalog.Icons.Count > 0)
+            {
+                IconsListBox.SelectedIndex = 0;
+                StatusText.Text = $"Загружено иконок: {_iconCatalog.Icons.Count}.";
+            }
+            else
+            {
+                ClearSelectedIcon();
+                StatusText.Text = "В выбранной папке PNG-файлы не найдены.";
+            }
+        }
+        catch (Exception exception) when (exception is ArgumentException or IOException or UnauthorizedAccessException)
+        {
+            ShowValidationError(exception.Message);
+        }
+    }
+
+    private void SelectIconByName(string iconName)
+    {
+        EnemyIcon? icon = _iconCatalog.FindByName(iconName);
+        if (icon is null)
+        {
+            IconsListBox.SelectedIndex = -1;
+            MainEnemyIcon.Source = null;
+            SelectedIconText.Text = $"Файл {iconName} не найден в текущей папке";
+            return;
+        }
+
+        IconsListBox.SelectedItem = icon;
+        SelectIcon(icon);
+    }
+
+    private void SelectIcon(EnemyIcon icon)
+    {
+        IconNameTextBox.Text = icon.Name;
+        MainEnemyIcon.Source = LoadBitmap(icon.ImagePath);
+        SelectedIconText.Text = icon.Name;
+    }
+
+    private static BitmapImage LoadBitmap(string path)
+    {
+        var bitmap = new BitmapImage();
+        bitmap.BeginInit();
+        bitmap.CacheOption = BitmapCacheOption.OnLoad;
+        bitmap.UriSource = new System.Uri(Path.GetFullPath(path));
+        bitmap.EndInit();
+        bitmap.Freeze();
+        return bitmap;
+    }
+
     private void ClearForm()
     {
         EnemyNameTextBox.Clear();
@@ -203,6 +307,15 @@ public partial class MainWindow : Window
         BaseGoldTextBox.Text = "10";
         GoldModifierTextBox.Text = "1,05";
         SpawnChanceTextBox.Text = "0,5";
+        ClearSelectedIcon();
+    }
+
+    private void ClearSelectedIcon()
+    {
+        IconsListBox.SelectedIndex = -1;
+        MainEnemyIcon.Source = null;
+        SelectedIconText.Text = "Не выбрана";
+        IconNameTextBox.Clear();
     }
 
     private void ShowValidationError(string message)
@@ -226,4 +339,3 @@ public partial class MainWindow : Window
         double GoldModifier,
         double SpawnChance);
 }
-
